@@ -376,6 +376,7 @@ main { max-width: 1180px; margin: 0 auto; }
 
 .goodreads {
   display: inline-block;
+  white-space: nowrap;
   font-family: var(--mono);
   font-size: 0.7rem;
   letter-spacing: 0.16em;

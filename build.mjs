@@ -133,6 +133,7 @@ function loadBooks() {
       title: data.title || file.replace(/\.md$/, ""),
       author: data.author || "Unknown",
       year: data.year,
+      order: typeof data.order === "number" ? data.order : null,
       goodreads: data.goodreads,
       cover: coverUrl(data),
       chosenBy: data.chosen_by,
@@ -144,11 +145,18 @@ function loadBooks() {
     };
   });
 
-  // Catalogue numbers follow the shelf, so a book keeps its number as the
-  // club grows.
-  [...books]
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .forEach((book, i) => { book.no = String(i + 1).padStart(3, "0"); });
+  // Catalogue numbers follow the order the club read them, so a book's number
+  // is a fact about the club rather than an artefact of sorting. Anything
+  // without an explicit order falls in behind, alphabetically.
+  const numbered = [...books].sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    if (a.order != null) return -1;
+    if (b.order != null) return 1;
+    return a.title.localeCompare(b.title);
+  });
+  numbered.forEach((book, i) => {
+    book.no = String(book.order ?? i + 1).padStart(3, "0");
+  });
 
   return books;
 }
@@ -230,9 +238,14 @@ function build() {
 
   const reading = books.filter((b) => b.status === "reading");
   const shelf = books.filter((b) => b.status === "shelf");
+  // Most recently read first: by reading order where the club recorded one,
+  // otherwise by the date it was finished.
   const read = books
     .filter((b) => b.status === "read")
-    .sort((a, b) => (b.readDate || "").localeCompare(a.readDate || ""));
+    .sort((a, b) => {
+      if (a.order != null && b.order != null) return b.order - a.order;
+      return (b.readDate || "").localeCompare(a.readDate || "");
+    });
 
   const rated = read.filter((b) => b.rating);
   const clubAverage = rated.length
