@@ -148,6 +148,20 @@ main { max-width: 1180px; margin: 0 auto; }
   color: var(--ink-soft);
 }
 
+/* What the club is doing now, beside what it does next. */
+.now {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(20px, 3vw, 34px);
+  align-items: start;
+}
+
+.now .cards { grid-template-columns: 1fr; }
+
+@media (max-width: 900px) {
+  .now { grid-template-columns: 1fr; }
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
@@ -232,6 +246,29 @@ main { max-width: 1180px; margin: 0 auto; }
 }
 
 .cover-missing .cover-fallback { display: flex; }
+
+/* A pick that hasn't happened yet: an empty card slot with a question mark
+   where the cover goes. */
+.card-blank { opacity: 0.72; }
+
+.cover-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 2px dashed var(--ink-faint);
+  box-shadow: none;
+}
+
+.cover-blank span {
+  font-size: 2.6rem;
+  font-weight: 300;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  line-height: 1;
+}
+
+.card-blank .title { color: var(--ink-soft); font-style: italic; }
 
 /* ── Card body ────────────────────────────────────────────────────────── */
 
