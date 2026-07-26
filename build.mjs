@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Reads books/*.md and writes index.html. No dependencies — `node build.mjs`.
 
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -83,13 +83,30 @@ function renderNote(body) {
     .join("");
 }
 
-function averageRating(data) {
-  if (data.ratings && typeof data.ratings === "object") {
-    const scores = Object.values(data.ratings).filter((n) => typeof n === "number");
-    if (scores.length) {
-      return { value: scores.reduce((a, b) => a + b, 0) / scores.length, count: scores.length };
-    }
+// Members' scores, pulled from Goodreads by fetch-ratings.mjs. Entries arrive
+// anonymous and shuffled; nothing here reintroduces a name.
+function loadRatings() {
+  const path = join(root, "ratings.json");
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, "utf8")).books ?? {};
+  } catch {
+    console.warn("ratings.json couldn't be read — building without scores.");
+    return {};
   }
+}
+
+function goodreadsId(url) {
+  const m = String(url ?? "").match(/\/book\/show\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+function averageRating(entries, data) {
+  const scores = entries.map((e) => e.rating).filter((n) => typeof n === "number");
+  if (scores.length) {
+    return { value: scores.reduce((a, b) => a + b, 0) / scores.length, count: scores.length };
+  }
+  // Manual fallback for a book nobody logged on Goodreads.
   if (typeof data.rating === "number") return { value: data.rating, count: null };
   return null;
 }
@@ -123,10 +140,12 @@ function stars(value) {
 
 function loadBooks() {
   const files = readdirSync(BOOKS_DIR).filter((f) => f.endsWith(".md")).sort();
+  const allRatings = loadRatings();
 
   const books = files.map((file) => {
     const { data, body } = parseFrontMatter(readFileSync(join(BOOKS_DIR, file), "utf8"));
-    const rating = averageRating(data);
+    const entries = allRatings[goodreadsId(data.goodreads)] ?? [];
+    const rating = averageRating(entries, data);
     const status = data.read ? "read" : data.reading ? "reading" : "shelf";
     return {
       file,
@@ -139,7 +158,7 @@ function loadBooks() {
       chosenBy: data.chosen_by,
       note: renderNote(body),
       readDate: typeof data.read === "string" ? data.read : null,
-      ratings: data.ratings && typeof data.ratings === "object" ? data.ratings : null,
+      reviews: entries.map((e) => e.review).filter(Boolean),
       rating,
       status,
     };
@@ -173,21 +192,27 @@ function bookCard(book, index) {
   if (book.status === "read" && book.readDate) meta.push(`Read ${esc(formatDate(book.readDate))}`);
   if (book.chosenBy) meta.push(`Chosen by ${esc(book.chosenBy)}`);
 
+  // Scores belong to the club, not to named people — no attribution anywhere
+  // in the markup, and the reviews are already shuffled by fetch-ratings.mjs.
   let verdict = "";
-  if (book.rating) {
-    const tally = book.ratings
-      ? Object.entries(book.ratings)
-          .map(([who, score]) => `<li><span>${esc(who)}</span><b>${esc(score)}</b></li>`)
-          .join("")
-      : "";
-    verdict =
-      `<div class="verdict">` +
-      `<div class="score">${stars(book.rating.value)}<b>${book.rating.value.toFixed(1)}</b><span>/ 5</span></div>` +
-      (book.rating.count ? `<p class="tally-label">${book.rating.count} member${book.rating.count === 1 ? "" : "s"} rated</p>` : "") +
-      (tally ? `<ul class="tally">${tally}</ul>` : "") +
-      `</div>`;
-  } else if (book.status === "read") {
-    verdict = `<div class="verdict"><p class="pending">Ratings still coming in</p></div>`;
+  if (book.status === "read") {
+    if (book.rating) {
+      const reviews = book.reviews
+        .map((text) => `<li>${renderNote(text)}</li>`)
+        .join("");
+      verdict =
+        `<div class="verdict">` +
+        `<div class="score">${stars(book.rating.value)}<b>${book.rating.value.toFixed(1)}</b><span>/ 5</span></div>` +
+        (book.rating.count
+          ? `<p class="tally-label">${book.rating.count} rating${book.rating.count === 1 ? "" : "s"}</p>`
+          : "") +
+        (reviews
+          ? `<details class="reviews"><summary>${book.reviews.length} review${book.reviews.length === 1 ? "" : "s"}</summary><ul>${reviews}</ul></details>`
+          : "") +
+        `</div>`;
+    } else {
+      verdict = `<div class="verdict"><p class="pending">Ratings still coming in</p></div>`;
+    }
   }
 
   const stamp =

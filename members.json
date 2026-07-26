@@ -1,0 +1,9 @@
+{
+  "_comment": "Whose Goodreads shelves are polled for ratings. Names are here so this file stays maintainable — they are never written to ratings.json or rendered on the site. Profiles must be public.",
+  "members": [
+    { "name": "Paul",  "goodreads_id": "5903149" },
+    { "name": "Davy",  "goodreads_id": "104892761" },
+    { "name": "Kate",  "goodreads_id": "187393228" },
+    { "name": "Phil",  "goodreads_id": "187248301" }
+  ]
+}

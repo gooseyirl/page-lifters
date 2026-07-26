@@ -3,7 +3,7 @@ title: Horrorstör
 author: Grady Hendrix
 year: 2014
 order: 5
-cover: https://covers.openlibrary.org/b/id/8773505-L.jpg
+isbn: "9781594745263"
 goodreads: https://www.goodreads.com/book/show/13129925-horrorst-r
 read: true
 ---
