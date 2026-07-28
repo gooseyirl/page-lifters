@@ -189,12 +189,6 @@ main { max-width: 1180px; margin: 0 auto; }
     0 4px 10px -4px #241c1230;
 }
 
-/* The book on the go is the point of the page — 15% larger, cover and text
-   together. `zoom` scales the contents; the grid column has to be widened to
-   match, or the card is pinned to a standard column and only its insides grow. */
-.card-reading { zoom: 1.15; }
-.shelf:has(.card-reading) .cards { grid-template-columns: minmax(0, 384px); }
-
 .card-no {
   position: absolute;
   top: 14px;
