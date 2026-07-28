@@ -97,6 +97,9 @@ async function main() {
   const byTitle = new Map(books.map((b) => [normalise(b.title), b]));
 
   const collected = new Map(books.map((b) => [b.id, []]));
+  // The feed carries the publisher blurb too. It's about the book, not the
+  // member, so there's nothing to anonymise — first one wins.
+  const synopses = new Map();
   let matched = 0;
 
   for (const member of members) {
@@ -116,6 +119,11 @@ async function main() {
       const book = byId.get(field(item, "book_id")) ?? byTitle.get(normalise(field(item, "title")));
       if (!book) continue;
 
+      if (!synopses.has(book.id)) {
+        const blurb = reviewText(field(item, "book_description"));
+        if (blurb) synopses.set(book.id, blurb);
+      }
+
       const rating = Number(field(item, "user_rating"));
       const review = reviewText(field(item, "user_review"));
       // rating 0 means shelved but not scored — not a zero-star verdict.
@@ -133,13 +141,20 @@ async function main() {
 
   const out = {};
   for (const [id, entries] of collected) {
-    if (entries.length) out[id] = shuffle(entries);
+    const synopsis = synopses.get(id);
+    if (!entries.length && !synopsis) continue;
+    out[id] = {
+      ...(synopsis ? { synopsis } : {}),
+      entries: shuffle(entries),
+    };
   }
 
   writeFileSync(OUT, JSON.stringify({ fetched: new Date().toISOString(), books: out }, null, 2) + "\n");
 
-  const reviews = Object.values(out).flat().filter((e) => e.review).length;
-  console.log(`\nWrote ratings.json — ${matched} entries across ${Object.keys(out).length} books, ${reviews} with a written review.`);
+  const all = Object.values(out).flatMap((b) => b.entries);
+  const reviews = all.filter((e) => e.review).length;
+  const withSynopsis = Object.values(out).filter((b) => b.synopsis).length;
+  console.log(`\nWrote ratings.json — ${matched} entries across ${Object.keys(out).length} books, ${reviews} with a written review, ${withSynopsis} with a synopsis.`);
   if (!existsSync(join(root, "index.html"))) return;
   console.log("Run `node build.mjs` to fold them into the page.");
 }

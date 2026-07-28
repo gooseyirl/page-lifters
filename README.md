@@ -65,6 +65,26 @@ With an `isbn`, covers come from Open Library:
 edition the card falls back to the title on a plain board — try a different
 edition's ISBN, or drop a file in and point `cover:` at it.
 
+## The book panel
+
+Clicking a card slides out a panel from the right with the cover, author,
+club score, a breakdown of who scored what, the synopsis and any reviews.
+Escape or a click outside closes it.
+
+The synopsis and reviews come from Goodreads via `fetch-ratings.mjs` — there
+is nothing to write by hand. A `synopsis:` in a book's front matter overrides
+the fetched one.
+
+## Ratings
+
+```bash
+node fetch-ratings.mjs   # polls the shelves in members.json -> ratings.json
+node build.mjs           # folds them into index.html
+```
+
+`ratings.json` holds anonymous, shuffled entries — no names, in the file or on
+the page. `members.json` is the only thing that maps a person to a profile.
+
 ## Layout
 
 ```
@@ -72,6 +92,9 @@ books/*.md      one file per book — the only thing you edit
 build.mjs       reads books/, writes index.html
 style.css       the whole design
 index.html      generated — don't edit by hand
+members.json    whose shelves to poll
+ratings.json    generated — scores and synopses, anonymised
+fetch-ratings.mjs  polls Goodreads
 ```
 
 ## Up next

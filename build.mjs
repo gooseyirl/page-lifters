@@ -96,9 +96,28 @@ function loadRatings() {
   }
 }
 
+// Publisher blurbs run long; the panel wants a paragraph, not a page.
+function shorten(text, limit = 420) {
+  if (!text || text.length <= limit) return text ?? "";
+  const cut = text.slice(0, limit);
+  const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  return (stop > limit * 0.6 ? cut.slice(0, stop + 1) : cut.replace(/\s+\S*$/, "") + "…").trim();
+}
+
 function goodreadsId(url) {
   const m = String(url ?? "").match(/\/book\/show\/(\d+)/);
   return m ? m[1] : null;
+}
+
+// How many members gave each score — 5 down to 1, always all five rows so the
+// shape of the club's opinion is visible at a glance.
+function breakdown(entries) {
+  const counts = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    count: entries.filter((e) => Math.round(e.rating) === star).length,
+  }));
+  const most = Math.max(1, ...counts.map((c) => c.count));
+  return counts.map((c) => ({ ...c, share: (c.count / most) * 100 }));
 }
 
 function averageRating(entries, data) {
@@ -144,11 +163,15 @@ function loadBooks() {
 
   const books = files.map((file) => {
     const { data, body } = parseFrontMatter(readFileSync(join(BOOKS_DIR, file), "utf8"));
-    const entries = allRatings[goodreadsId(data.goodreads)] ?? [];
+    const record = allRatings[goodreadsId(data.goodreads)] ?? {};
+    const entries = record.entries ?? [];
     const rating = averageRating(entries, data);
     const status = data.read ? "read" : data.reading ? "reading" : "shelf";
     return {
       file,
+      id: `book-${file.replace(/\.md$/, "").replace(/[^a-z0-9-]/gi, "")}`,
+      synopsis: shorten(data.synopsis ?? record.synopsis ?? ""),
+      breakdown: breakdown(entries),
       title: data.title || file.replace(/\.md$/, ""),
       author: data.author || "Unknown",
       year: data.year,
@@ -181,6 +204,58 @@ function loadBooks() {
   return books;
 }
 
+// The slide-out for one book. Rendered inert into the page and revealed by
+// the small script at the foot — no data duplicated into JavaScript.
+function bookPanel(book) {
+  const cover = book.cover
+    ? `<img src="${esc(book.cover)}" alt="Cover of ${esc(book.title)}" loading="lazy">`
+    : `<span class="cover-fallback" style="display:flex">${esc(book.title)}</span>`;
+
+  const rated = book.breakdown.some((row) => row.count);
+  const bars = book.breakdown
+    .map(
+      (row) =>
+        `<li${row.count ? "" : ' class="empty"'}>` +
+        `<span class="bd-star">${row.star}<i aria-hidden="true">★</i></span>` +
+        `<span class="bd-track"><span class="bd-fill" style="width:${row.share}%"></span></span>` +
+        `<span class="bd-count">${row.count}</span></li>`
+    )
+    .join("");
+
+  const reviews = book.reviews.map((text) => `<li>${renderNote(text)}</li>`).join("");
+
+  return `
+    <aside class="panel" id="${esc(book.id)}" role="dialog" aria-modal="true" aria-label="${esc(book.title)}" hidden>
+      <button class="panel-close" type="button" data-close aria-label="Close">&#10005;</button>
+      <div class="panel-scroll">
+        <div class="panel-cover">${cover}</div>
+        <h2 class="panel-title">${esc(book.title)}</h2>
+        <p class="panel-author">${esc(book.author)}${book.year ? ` &middot; ${esc(book.year)}` : ""}</p>
+
+        ${
+          book.rating
+            ? `<div class="panel-score">${stars(book.rating.value)}<b>${book.rating.value.toFixed(1)}</b><span>/ 5</span></div>` +
+              (rated
+                ? `<p class="panel-label">${book.rating.count} rating${book.rating.count === 1 ? "" : "s"}</p>
+                   <ul class="breakdown">${bars}</ul>`
+                : "")
+            : `<p class="panel-label">${book.status === "read" ? "Ratings still coming in" : "Not rated yet"}</p>`
+        }
+
+        ${book.synopsis ? `<div class="panel-block"><h3>Synopsis</h3><div class="panel-prose">${renderNote(book.synopsis)}</div></div>` : ""}
+        ${book.note ? `<div class="panel-block"><h3>Club note</h3><div class="panel-prose">${book.note}</div></div>` : ""}
+        ${
+          reviews
+            ? `<div class="panel-block"><h3>Reviews</h3><ul class="panel-reviews">${reviews}</ul></div>`
+            : book.rating
+            ? `<div class="panel-block"><h3>Reviews</h3><p class="panel-label">Nobody's written one yet</p></div>`
+            : ""
+        }
+        ${book.goodreads ? `<a class="goodreads" href="${esc(book.goodreads)}" target="_blank" rel="noopener">Goodreads <span aria-hidden="true">↗</span></a>` : ""}
+      </div>
+    </aside>`;
+}
+
 function bookCard(book, index) {
   const tilt = ((index % 5) - 2) * 0.35;
   const cover = book.cover
@@ -198,17 +273,14 @@ function bookCard(book, index) {
   let verdict = "";
   if (book.status === "read") {
     if (book.rating) {
-      const reviews = book.reviews
-        .map((text) => `<li>${renderNote(text)}</li>`)
-        .join("");
+      // The breakdown and reviews live in the panel; the card stays a card.
       verdict =
         `<div class="verdict">` +
         `<div class="score">${stars(book.rating.value)}<b>${book.rating.value.toFixed(1)}</b><span>/ 5</span></div>` +
         (book.rating.count
-          ? `<p class="tally-label">${book.rating.count} rating${book.rating.count === 1 ? "" : "s"}</p>`
-          : "") +
-        (reviews
-          ? `<details class="reviews"><summary>${book.reviews.length} review${book.reviews.length === 1 ? "" : "s"}</summary><ul>${reviews}</ul></details>`
+          ? `<p class="tally-label">${book.rating.count} rating${book.rating.count === 1 ? "" : "s"}` +
+            (book.reviews.length ? ` &middot; ${book.reviews.length} review${book.reviews.length === 1 ? "" : "s"}` : "") +
+            `</p>`
           : "") +
         `</div>`;
     } else {
@@ -224,12 +296,12 @@ function bookCard(book, index) {
       : "";
 
   return `
-    <article class="card card-${book.status}" style="--tilt:${tilt}deg;--delay:${index * 60}ms">
+    <article class="card card-${book.status}" data-panel="${esc(book.id)}" style="--tilt:${tilt}deg;--delay:${index * 60}ms">
       <div class="card-no">№ ${esc(book.no)}</div>
       <div class="cover">${cover}<span class="cover-fallback">${esc(book.title)}</span></div>
       <div class="card-body">
         <div class="card-head">
-          <h3 class="title">${esc(book.title)}</h3>
+          <h3 class="title"><button class="title-btn" type="button" data-open="${esc(book.id)}">${esc(book.title)}</button></h3>
           <p class="author">${esc(book.author)}</p>
         </div>
         ${meta.length ? `<p class="meta">${meta.join(" &middot; ")}</p>` : ""}
@@ -369,6 +441,61 @@ function build() {
 <footer>
   <p>Kept by hand in markdown. Covers via Open Library.</p>
 </footer>
+
+<div class="panel-overlay" data-close hidden></div>
+${books.map(bookPanel).join("")}
+
+<script>
+(function () {
+  var overlay = document.querySelector('.panel-overlay');
+  var open = null;
+  var lastFocus = null;
+
+  function show(id) {
+    var panel = document.getElementById(id);
+    if (!panel || panel === open) return;
+    close();
+    lastFocus = document.activeElement;
+    panel.hidden = false;
+    overlay.hidden = false;
+    // Flush layout so the transition has a closed state to start from. A
+    // requestAnimationFrame would be the usual trick, but it never fires while
+    // the document is hidden, which would leave the panel open yet off-screen.
+    void panel.offsetWidth;
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    document.body.classList.add('panel-is-open');
+    open = panel;
+    panel.querySelector('[data-close]').focus();
+  }
+
+  function close() {
+    if (!open) return;
+    var panel = open;
+    open = null;
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.classList.remove('panel-is-open');
+    window.setTimeout(function () {
+      if (!panel.classList.contains('open')) { panel.hidden = true; overlay.hidden = true; }
+    }, 320);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close]')) { close(); return; }
+    var trigger = e.target.closest('[data-open]');
+    if (trigger) { show(trigger.getAttribute('data-open')); return; }
+    // Anywhere on a card counts, except the links inside it.
+    var card = e.target.closest('.card[data-panel]');
+    if (card && !e.target.closest('a')) show(card.getAttribute('data-panel'));
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') close();
+  });
+})();
+</script>
 </body>
 </html>
 `;

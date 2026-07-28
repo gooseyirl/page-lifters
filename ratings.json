@@ -1,64 +1,89 @@
 {
-  "fetched": "2026-07-28T20:10:59.456Z",
+  "fetched": "2026-07-28T20:18:51.521Z",
   "books": {
-    "13129925": [
-      {
-        "rating": 3
-      },
-      {
-        "rating": 4
-      }
-    ],
-    "13453029": [
-      {
-        "rating": 5
-      },
-      {
-        "rating": 4
-      }
-    ],
-    "13456414": [
-      {
-        "rating": 5
-      },
-      {
-        "rating": 4
-      }
-    ],
-    "20447745": [
-      {
-        "rating": 2
-      },
-      {
-        "rating": 3
-      },
-      {
-        "rating": 1
-      }
-    ],
-    "58340706": [
-      {
-        "rating": 2
-      },
-      {
-        "rating": 3
-      }
-    ],
-    "61244268": [
-      {
-        "rating": 5
-      },
-      {
-        "rating": 3
-      }
-    ],
-    "62047984": [
-      {
-        "rating": 3
-      },
-      {
-        "rating": 4
-      }
-    ]
+    "13129925": {
+      "synopsis": "Something strange is happening at the Orsk furniture superstore in Cleveland, Ohio. Every morning, employees arrive to find broken Kjerring bookshelves, shattered Glans water goblets, and smashed Liripip wardrobes. Sales are down, security cameras reveal nothing, and store managers are panicking.\n \nTo unravel the mystery, three employees volunteer to work a nine-hour dusk-till-dawn shift. In the dead of the night, they’ll patrol the empty showroom floor, investigate strange sights and sounds, and encounter horrors that defy the imagination.\n \nA traditional haunted house story in a thoroughly contemporary setting, Horrorstör is designed to retain its luster and natural appearance for a lifetime of use. Pleasingly proportioned with generous French flaps and a softcover binding, Horrorstör delivers the psychological terror you need in the elegant package you deserve.\n\nDesigned by Andie Reid, cover photography by Christine Ferrara.",
+      "entries": [
+        {
+          "rating": 4
+        },
+        {
+          "rating": 3
+        }
+      ]
+    },
+    "13453029": {
+      "synopsis": "This Omnibus Edition collects the five Wool books into a single volume. \n\nThe first Wool story was released as a standalone short in July of 2011. Due to reviewer demand, the rest of the story was released over the next six months. \n\nThis is the story of mankind clawing for survival, of mankind on the edge. The world outside has grown unkind, the view of it limited, talk of it forbidden. But there are always those who hope, who dream. These are the dangerous people, the residents who infect others with their optimism. Their punishment is simple. They are given the very thing they profess to want: They are allowed outside.\n\nAlternate cover for B0071XO8RA",
+      "entries": [
+        {
+          "rating": 4
+        },
+        {
+          "rating": 5
+        }
+      ]
+    },
+    "13456414": {
+      "synopsis": "As a faithful Mormon, Soren Johansson has always believed he’ll be reunited with his loved ones after death in an eternal hereafter. Then, he dies. Soren wakes to find himself cast by a God he has never heard of into a Hell whose dimensions he can barely grasp: a vast library he can only escape from by finding the book that contains the story of his life.\n\nIn this haunting existential novella, author, philosopher, and ecologist Steven L. Peck explores a subversive vision of eternity, taking the reader on a journey through the afterlife of a world where everything everyone believed in turns out to be wrong.",
+      "entries": [
+        {
+          "rating": 4
+        },
+        {
+          "rating": 5
+        }
+      ]
+    },
+    "20447745": {
+      "synopsis": "Meet Hwa. One of the few in her community to forego bio-engineered enhancements, she’s the last truly organic person left on the rig. But she’s an expert in the arts of self-defence, and she’s been charged with training the Family’s youngest, who has been receiving death threats – seemingly from another timeline. \n\nMeanwhile, a series of interconnected murders threatens the city’s stability – serial killer? Or something much, much worse...?",
+      "entries": [
+        {
+          "rating": 2
+        },
+        {
+          "rating": 1
+        },
+        {
+          "rating": 3
+        }
+      ]
+    },
+    "50523477": {
+      "synopsis": "Author of Empire of Sand and Realm of Ash Tasha Suri's The Jasmine Throne, beginning a new trilogy set in a world inspired by the history and epics of India, in which a captive princess and a maidservant in possession of forbidden magic become unlikely allies on a dark journey to save their empire from the princess's traitor brother.\n\nImprisoned by her dictator brother, Malini spends her days in isolation in the Hirana: an ancient temple that was once the source of the powerful, magical deathless waters — but is now little more than a decaying ruin.\n\nPriya is a maidservant, one among several who make the treacherous journey to the top of the Hirana every night to clean Malini’s chambers. She is happy to be an anonymous drudge, so long as it keeps anyone from guessing the dangerous secret she hides.\n\nBut when Malini accidentally bears witness to Priya’s true nature, their destinies become irrevocably tangled. One is a vengeful princess seeking to depose her brother from his throne. The other is a priestess seeking to find her family. Together, they will change the fate of an empire.",
+      "entries": []
+    },
+    "58340706": {
+      "synopsis": "For fans of Uprooted and For the Wolf comes a dark, lushly gothic fantasy about a maiden who must unleash the monster within to save her kingdom—but the monster in her head isn't the only threat lurking.\n\nElspeth needs a monster. The monster might be her.\n\nElspeth Spindle needs more than luck to stay safe in the eerie, mist-locked kingdom she calls home—she needs a monster. She calls him the Nightmare, an ancient, mercurial spirit trapped in her head. He protects her. He keeps her secrets.\n\nBut nothing comes for free, especially magic.\n\nWhen Elspeth meets a mysterious highwayman on the forest road, her life takes a drastic turn. Thrust into a world of shadow and deception, she joins a dangerous quest to cure the kingdom of the dark magic infecting it. Except the highwayman just so happens to be the King’s own nephew, Captain of the Destriers…and guilty of high treason.\n\nHe and Elspeth have until Solstice to gather twelve Providence Cards—the keys to the cure. But as the stakes heighten and their undeniable attraction intensifies, Elspeth is forced to face her darkest secret yet: the Nightmare is slowly, darkly, taking over her mind. And she might not be able to stop him.",
+      "entries": [
+        {
+          "rating": 2
+        },
+        {
+          "rating": 3
+        }
+      ]
+    },
+    "61244268": {
+      "synopsis": "Kissen’s family were killed by zealots of a fire god. Now, she makes a living killing gods, and enjoys it. That is until she finds a god she cannot kill: Skedi, a god of white lies, has somehow bound himself to a young noble, and they are both on the run from unknown assassins.\n\nJoined by a disillusioned knight on a secret quest, they must travel to the ruined city of Blenraden, where the last of the wild gods reside, to each beg a favour.\n\nPursued by demons, and in the midst of burgeoning civil war, they will all face a reckoning – something is rotting at the heart of their world, and only they can be the ones to stop it.",
+      "entries": [
+        {
+          "rating": 5
+        },
+        {
+          "rating": 3
+        }
+      ]
+    },
+    "62047984": {
+      "synopsis": "Authors Juniper Hayward and Athena Liu were supposed to be twin rising stars. But Athena is a literary darling while June is a nobody. Who wants stories about basic white girls?, June thinks. So when June witnesses Athena’s death in a freak accident, she acts on impulse, stealing Athena’s just-finished masterpiece, an experimental novel about the unsung contributions of Chinese laborers during World War I.\n\nSo what if June edits Athena’s novel and sends it to her agent as her own work? So what if she lets her new publisher rebrand her as Juniper Song—complete with an ambiguously ethnic author photo? This piece of history deserve to be told, whoever the teller. That is what June believes, and The New York Times bestseller list agrees.\n\nBut June cannot escape Athena’s shadow, and emerging evidence threatens her stolen success. As she races to protect her secret she discovers exactly how far she will go to keep what she thinks she deserves.",
+      "entries": [
+        {
+          "rating": 4
+        },
+        {
+          "rating": 3
+        }
+      ]
+    }
   }
 }
