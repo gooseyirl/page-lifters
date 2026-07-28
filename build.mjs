@@ -323,7 +323,7 @@ function section(title, blurb, books, startIndex) {
     <section class="shelf">
       <div class="shelf-head">
         <h2>${esc(title)}</h2>
-        <p>${esc(blurb)}</p>
+        ${blurb ? `<p>${esc(blurb)}</p>` : ""}
       </div>
       <div class="cards">${books.map((b, i) => bookCard(b, startIndex + i)).join("")}</div>
     </section>`;
@@ -368,7 +368,7 @@ function build() {
   ].filter(Boolean);
 
   const sections = [
-    section("Currently reading", "On the go right now.", reading, 0),
+    section("Currently reading", "", reading, 0),
     section("On the shelf", "Chosen, waiting their turn.", shelf, reading.length),
     section("Read", "Finished, argued about, scored.", read, reading.length + shelf.length),
   ].join("");
@@ -390,7 +390,7 @@ function build() {
 <div class="grain" aria-hidden="true"></div>
 
 <header class="masthead">
-  <p class="kicker">Card Catalogue &middot; Est. 2026</p>
+  <p class="kicker">Est. 2026</p>
   <h1><span>Page-Lifters</span><em>Book Club</em></h1>
   <div class="rule"></div>
   <dl class="stats">
