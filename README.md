@@ -96,20 +96,3 @@ members.json    whose shelves to poll
 ratings.json    generated — scores and synopses, anonymised
 fetch-ratings.mjs  polls Goodreads
 ```
-
-## Up next
-
-"Currently reading" and "Up next" sit side by side at the top of the page.
-A book claims the Up next slot with `next: true`:
-
-```markdown
----
-title: Whatever We Picked
-author: Someone
-next: true
----
-```
-
-Without one, Up next shows a question-mark placeholder. If several books are
-on the shelf and none is marked, the first takes the slot and the rest stay
-under "On the shelf".

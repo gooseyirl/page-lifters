@@ -182,7 +182,6 @@ function loadBooks() {
       chosenBy: data.chosen_by,
       note: renderNote(body),
       readDate: typeof data.read === "string" ? data.read : null,
-      isNext: data.next === true,
       reviews: entries.map((e) => e.review).filter(Boolean),
       rating,
       status,
@@ -318,49 +317,6 @@ function bookCard(book, index) {
     </article>`;
 }
 
-// Stands in for a book that hasn't been chosen yet.
-function placeholderCard(note) {
-  return `
-    <article class="card card-blank">
-      <div class="card-no">№ —</div>
-      <div class="cover cover-blank"><span aria-hidden="true">?</span></div>
-      <div class="card-body">
-        <div class="card-head">
-          <h3 class="title">Not chosen yet</h3>
-          <p class="author">&mdash;</p>
-        </div>
-        <p class="meta">${esc(note)}</p>
-      </div>
-    </article>`;
-}
-
-// "Currently reading" and "Up next" sit side by side — what the club is doing
-// now, and what it does after.
-function nowSection(reading, upNext) {
-  const column = (title, blurb, card) => `
-    <div class="now-col">
-      <div class="shelf-head">
-        <h2>${esc(title)}</h2>
-        <p>${esc(blurb)}</p>
-      </div>
-      <div class="cards">${card}</div>
-    </div>`;
-
-  return `
-    <section class="shelf now">
-      ${column(
-        "Currently reading",
-        "On the go right now.",
-        reading ? bookCard(reading, 0) : placeholderCard("Between books")
-      )}
-      ${column(
-        "Up next",
-        "After this one.",
-        upNext ? bookCard(upNext, 1) : placeholderCard("Awaiting the next pick")
-      )}
-    </section>`;
-}
-
 function section(title, blurb, books, startIndex) {
   if (!books.length) return "";
   return `
@@ -390,12 +346,7 @@ function build() {
   const books = loadBooks();
 
   const reading = books.filter((b) => b.status === "reading");
-  // `next: true` claims the Up next slot; otherwise the first book on the
-  // shelf takes it, and the rest stay on the shelf below.
-  const upNext = books.find((b) => b.status === "shelf" && b.isNext)
-    ?? books.find((b) => b.status === "shelf")
-    ?? null;
-  const shelf = books.filter((b) => b.status === "shelf" && b !== upNext);
+  const shelf = books.filter((b) => b.status === "shelf");
   // Most recently read first: by reading order where the club recorded one,
   // otherwise by the date it was finished.
   const read = books
@@ -413,14 +364,13 @@ function build() {
   const stats = [
     { value: books.length, label: books.length === 1 ? "book" : "books" },
     { value: read.length, label: "read" },
-    { value: shelf.length + reading.length + (upNext ? 1 : 0), label: "to come" },
     clubAverage ? { value: clubAverage.toFixed(1), label: "club average" } : null,
   ].filter(Boolean);
 
   const sections = [
-    nowSection(reading[0] ?? null, upNext),
-    section("On the shelf", "Chosen, waiting their turn.", shelf, 2),
-    section("Read", "Finished, argued about, scored.", read, 2 + shelf.length),
+    section("Currently reading", "On the go right now.", reading, 0),
+    section("On the shelf", "Chosen, waiting their turn.", shelf, reading.length),
+    section("Read", "Finished, argued about, scored.", read, reading.length + shelf.length),
   ].join("");
 
   const html = `<!DOCTYPE html>
