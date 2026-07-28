@@ -2,6 +2,7 @@
 // Reads books/*.md and writes index.html. No dependencies — `node build.mjs`.
 
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -296,12 +297,14 @@ function bookCard(book, index) {
       : "";
 
   return `
-    <article class="card card-${book.status}" data-panel="${esc(book.id)}" style="--tilt:${tilt}deg;--delay:${index * 60}ms">
+    <article class="card card-${book.status}" data-panel="${esc(book.id)}"
+             role="button" tabindex="0" aria-label="Details for ${esc(book.title)}"
+             style="--tilt:${tilt}deg;--delay:${index * 60}ms">
       <div class="card-no">№ ${esc(book.no)}</div>
       <div class="cover">${cover}<span class="cover-fallback">${esc(book.title)}</span></div>
       <div class="card-body">
         <div class="card-head">
-          <h3 class="title"><button class="title-btn" type="button" data-open="${esc(book.id)}">${esc(book.title)}</button></h3>
+          <h3 class="title">${esc(book.title)}</h3>
           <p class="author">${esc(book.author)}</p>
         </div>
         ${meta.length ? `<p class="meta">${meta.join(" &middot; ")}</p>` : ""}
@@ -374,6 +377,15 @@ function section(title, blurb, books, startIndex) {
 // Page
 // ---------------------------------------------------------------------------
 
+// GitHub Pages serves the stylesheet with a four-hour cache and no version, so
+// a design change can sit invisible behind a stale copy. Stamping the content
+// hash onto the URL makes every change a new URL.
+function assetVersion(file) {
+  const path = join(root, file);
+  if (!existsSync(path)) return "";
+  return "?v=" + createHash("sha1").update(readFileSync(path)).digest("hex").slice(0, 8);
+}
+
 function build() {
   const books = loadBooks();
 
@@ -422,7 +434,7 @@ function build() {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css${assetVersion("style.css")}">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -484,15 +496,18 @@ ${books.map(bookPanel).join("")}
 
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-close]')) { close(); return; }
-    var trigger = e.target.closest('[data-open]');
-    if (trigger) { show(trigger.getAttribute('data-open')); return; }
     // Anywhere on a card counts, except the links inside it.
     var card = e.target.closest('.card[data-panel]');
     if (card && !e.target.closest('a')) show(card.getAttribute('data-panel'));
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') close();
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest && e.target.closest('.card[data-panel]');
+    if (!card || e.target.closest('a')) return;
+    e.preventDefault();
+    show(card.getAttribute('data-panel'));
   });
 })();
 </script>

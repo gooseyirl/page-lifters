@@ -374,19 +374,16 @@ main { max-width: 1180px; margin: 0 auto; }
 
 /* ── Slide-out panel ──────────────────────────────────────────────────── */
 
-.card { cursor: pointer; }
+/* The whole card is the target — bar the Goodreads link, which sits above it. */
+.card[data-panel] { cursor: pointer; }
+.card[data-panel]:hover .title { color: var(--stamp); }
 
-.title-btn {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
+.card[data-panel]:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 3px;
 }
 
-.title-btn:hover { color: var(--stamp); }
+.card .goodreads { position: relative; z-index: 1; }
 
 .panel-overlay {
   position: fixed;
@@ -416,6 +413,11 @@ main { max-width: 1180px; margin: 0 auto; }
 }
 
 .panel.open { transform: none; }
+
+/* `display: flex` above outranks the UA stylesheet's [hidden] { display: none },
+   so closed panels would otherwise stay in the page — focusable, and in the
+   flow entirely if this stylesheet ever fails to load. */
+.panel[hidden] { display: none; }
 
 body.panel-is-open { overflow: hidden; }
 
