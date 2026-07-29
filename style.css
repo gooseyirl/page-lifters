@@ -153,9 +153,10 @@ main { max-width: 1180px; margin: 0 auto; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: clamp(20px, 3vw, 34px);
-  /* Cards keep their natural height — a stretched row leaves dead paper under
-     the shorter entries. */
-  align-items: start;
+  /* One height for every card on a shelf, taken from the fullest one — a deck
+     of cards is cut to a single size. The foot sits on the bottom edge, so the
+     spare paper falls in the middle rather than under the last line. */
+  grid-auto-rows: 1fr;
 }
 
 /* ── Index card ───────────────────────────────────────────────────────── */
@@ -237,7 +238,11 @@ main { max-width: 1180px; margin: 0 auto; }
 
 /* ── Card body ────────────────────────────────────────────────────────── */
 
-.card-body { min-width: 0; }
+.card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Ruled line under the heading, like a real catalogue card. It hangs off the
    header rather than sitting at a fixed offset, so titles can run to any
@@ -585,7 +590,9 @@ body.panel-is-open { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 16px;
+  /* Held to the bottom of the card, whatever the entry above it runs to. */
+  margin-top: auto;
+  padding-top: 16px;
   min-height: 34px;
 }
 
