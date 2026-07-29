@@ -97,7 +97,8 @@ function loadRatings() {
   }
 }
 
-// Publisher blurbs run long; the panel wants a paragraph, not a page.
+// Publisher blurbs run long; the panel wants a paragraph, not a page. The full
+// text still ships — the panel keeps it a "See more" away.
 function shorten(text, limit = 420) {
   if (!text || text.length <= limit) return text ?? "";
   const cut = text.slice(0, limit);
@@ -168,10 +169,12 @@ function loadBooks() {
     const entries = record.entries ?? [];
     const rating = averageRating(entries, data);
     const status = data.read ? "read" : data.reading ? "reading" : "shelf";
+    const synopsis = String(data.synopsis ?? record.synopsis ?? "");
     return {
       file,
       id: `book-${file.replace(/\.md$/, "").replace(/[^a-z0-9-]/gi, "")}`,
-      synopsis: shorten(data.synopsis ?? record.synopsis ?? ""),
+      synopsis,
+      synopsisShort: shorten(synopsis),
       breakdown: breakdown(entries),
       title: data.title || file.replace(/\.md$/, ""),
       author: data.author || "Unknown",
@@ -224,6 +227,18 @@ function bookPanel(book) {
 
   const reviews = book.reviews.map((text) => `<li>${renderNote(text)}</li>`).join("");
 
+  // A trimmed blurb by default; the rest sits alongside it, one tap away.
+  const clipped = book.synopsisShort !== book.synopsis;
+  const synopsis = book.synopsis
+    ? `<div class="panel-block"><h3>Synopsis</h3>` +
+      `<div class="panel-prose">${renderNote(clipped ? book.synopsisShort : book.synopsis)}</div>` +
+      (clipped
+        ? `<div class="panel-prose panel-prose-full" hidden>${renderNote(book.synopsis)}</div>` +
+          `<button class="see-more" type="button" data-more aria-expanded="false">See more</button>`
+        : "") +
+      `</div>`
+    : "";
+
   return `
     <aside class="panel" id="${esc(book.id)}" role="dialog" aria-modal="true" aria-label="${esc(book.title)}" hidden>
       <button class="panel-close" type="button" data-close aria-label="Close">&#10005;</button>
@@ -242,7 +257,7 @@ function bookPanel(book) {
             : `<p class="panel-label">${book.status === "read" ? "Ratings still coming in" : "Not rated yet"}</p>`
         }
 
-        ${book.synopsis ? `<div class="panel-block"><h3>Synopsis</h3><div class="panel-prose">${renderNote(book.synopsis)}</div></div>` : ""}
+        ${synopsis}
         ${book.note ? `<div class="panel-block"><h3>Club note</h3><div class="panel-prose">${book.note}</div></div>` : ""}
         ${
           reviews
@@ -444,8 +459,22 @@ ${books.map(bookPanel).join("")}
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  // Swap the trimmed blurb for the whole thing, and back again.
+  function toggle(btn) {
+    var block = btn.parentNode;
+    var full = block.querySelector('.panel-prose-full');
+    var brief = block.querySelector('.panel-prose:not(.panel-prose-full)');
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    brief.hidden = !expanded;
+    full.hidden = expanded;
+    btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    btn.textContent = expanded ? 'See more' : 'See less';
+  }
+
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-close]')) { close(); return; }
+    var more = e.target.closest('[data-more]');
+    if (more) { toggle(more); return; }
     // Anywhere on a card counts, except the links inside it.
     var card = e.target.closest('.card[data-panel]');
     if (card && !e.target.closest('a')) show(card.getAttribute('data-panel'));

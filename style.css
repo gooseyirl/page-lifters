@@ -530,6 +530,25 @@ body.panel-is-open { overflow: hidden; }
 .panel-prose { font-size: 0.94rem; line-height: 1.6; color: #3b332b; }
 .panel-prose p + p { margin-top: 9px; }
 
+/* The rest of a trimmed blurb, one tap away. */
+.see-more {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 0 0 2px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--thread);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid #3f6b6055;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.see-more:hover { color: var(--ink); border-color: var(--ink); }
+
 .panel-reviews {
   list-style: none;
   display: flex;
