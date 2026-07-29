@@ -339,10 +339,20 @@
   var open = null;
   var lastFocus = null;
 
-  function show(id) {
+  // A hash only counts if it names one of the panels.
+  function isPanel(id) {
+    var el = id && document.getElementById(id);
+    return !!el && el.classList.contains('panel');
+  }
+
+  // An open panel is a place in the history, so the back button leaves it and
+  // a copied URL opens straight onto the book. A replayed call is one the
+  // history itself asked for, and must not push a fresh entry.
+  function show(id, replayed) {
     var panel = document.getElementById(id);
     if (!panel || panel === open) return;
-    close();
+    var swapping = !!open;
+    hide();
     lastFocus = document.activeElement;
     panel.hidden = false;
     overlay.hidden = false;
@@ -355,9 +365,17 @@
     document.body.classList.add('panel-is-open');
     open = panel;
     panel.querySelector('[data-close]').focus();
+    if (replayed) return;
+    // One entry per visit to the panels, not one per book looked at.
+    history[swapping ? 'replaceState' : 'pushState']({ panel: id }, '', '#' + id);
   }
 
-  function close() {
+  // Leaving is a navigation; the popstate handler does the closing.
+  function dismiss() {
+    if (open) history.back();
+  }
+
+  function hide() {
     if (!open) return;
     var panel = open;
     open = null;
@@ -382,8 +400,13 @@
     btn.textContent = expanded ? 'See more' : 'See less';
   }
 
+  window.addEventListener('popstate', function (e) {
+    var id = (e.state && e.state.panel) || location.hash.slice(1);
+    if (id && isPanel(id)) show(id, true); else hide();
+  });
+
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-close]')) { close(); return; }
+    if (e.target.closest('[data-close]')) { dismiss(); return; }
     var more = e.target.closest('[data-more]');
     if (more) { toggle(more); return; }
     // Anywhere on a card counts, except the links inside it.
@@ -392,13 +415,25 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { close(); return; }
+    if (e.key === 'Escape') { dismiss(); return; }
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var card = e.target.closest && e.target.closest('.card[data-panel]');
     if (!card || e.target.closest('a')) return;
     e.preventDefault();
     show(card.getAttribute('data-panel'));
   });
+
+  // Landing on a book's URL opens it. The bare page is slipped in underneath
+  // first, so back lands on the shelves instead of leaving the site.
+  var landed = location.hash.slice(1);
+  if (isPanel(landed)) {
+    history.replaceState(null, '', location.pathname + location.search);
+    show(landed);
+    // Put the book's card behind the panel, so closing it leaves the reader at
+    // the book they followed the link to.
+    var card = document.querySelector('.card[data-panel="' + landed + '"]');
+    if (card) card.scrollIntoView({ block: 'center' });
+  }
 })();
 </script>
 </body>
