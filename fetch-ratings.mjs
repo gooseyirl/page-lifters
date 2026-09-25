@@ -65,10 +65,10 @@ function clubBooks() {
   return books;
 }
 
-async function fetchShelf(userId) {
+async function fetchShelf(userId, shelf) {
   const items = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const url = `https://www.goodreads.com/review/list_rss/${userId}?shelf=%23ALL%23&page=${page}`;
+    const url = `https://www.goodreads.com/review/list_rss/${userId}?shelf=${shelf}&page=${page}`;
     const res = await fetch(url, { headers: { "User-Agent": UA } });
     if (!res.ok) throw new Error(`HTTP ${res.status} for user ${userId}`);
     const xml = await res.text();
@@ -102,7 +102,12 @@ async function main() {
   for (const member of members) {
     let items;
     try {
-      items = await fetchShelf(member.goodreads_id);
+      // The all-shelves feed blanks user_review; the read shelf keeps it. Read
+      // first so its copy of a book wins, then all-shelves for everything else.
+      items = [
+        ...(await fetchShelf(member.goodreads_id, "read")),
+        ...(await fetchShelf(member.goodreads_id, "%23ALL%23")),
+      ];
     } catch (err) {
       // Partial data would silently drop somebody's ratings, so keep the last
       // good ratings.json instead of overwriting it with a half-answer.
@@ -112,9 +117,11 @@ async function main() {
     }
 
     let hits = 0;
+    const seen = new Set();
     for (const item of items) {
       const book = byId.get(field(item, "book_id")) ?? byTitle.get(normalise(field(item, "title")));
-      if (!book) continue;
+      if (!book || seen.has(book.id)) continue;
+      seen.add(book.id);
 
       if (!synopses.has(book.id)) {
         const blurb = reviewText(field(item, "book_description"));
