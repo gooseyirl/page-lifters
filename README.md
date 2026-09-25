@@ -82,8 +82,12 @@ node fetch-ratings.mjs   # polls the shelves in members.json -> ratings.json
 node build.mjs           # folds them into index.html
 ```
 
-`ratings.json` holds anonymous, shuffled entries — no names, in the file or on
+`ratings.json` holds anonymous entries, sorted by score, — no names, in the file or on
 the page. `members.json` is the only thing that maps a person to a profile.
+
+A GitHub Action (`.github/workflows/refresh-ratings.yml`) runs both daily at
+06:00 UTC and commits only if a score or review changed. Trigger it by hand
+from the Actions tab → Refresh ratings → Run workflow.
 
 ## Layout
 

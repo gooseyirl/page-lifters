@@ -7,7 +7,7 @@
 // public profiles and carries user_rating and user_review. This reads that.
 //
 // Nothing identifying is written out. ratings.json holds only anonymous
-// entries, shuffled, so neither the page nor the repo says who gave what —
+// entries in a fixed order, so neither the page nor the repo says who gave what —
 // members.json maps names to profiles, and that is the only link.
 
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -80,13 +80,10 @@ async function fetchShelf(userId) {
   return items;
 }
 
-function shuffle(list) {
-  for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]];
-  }
-  return list;
-}
+// Sorted by score, then review text, so the order says nothing about whose
+// shelf an entry came from — and ratings.json only changes when a score does.
+const byScore = (a, b) =>
+  (b.rating ?? 0) - (a.rating ?? 0) || (a.review ?? "").localeCompare(b.review ?? "");
 
 // ---------------------------------------------------------------------------
 
@@ -145,11 +142,11 @@ async function main() {
     if (!entries.length && !synopsis) continue;
     out[id] = {
       ...(synopsis ? { synopsis } : {}),
-      entries: shuffle(entries),
+      entries: entries.sort(byScore),
     };
   }
 
-  writeFileSync(OUT, JSON.stringify({ fetched: new Date().toISOString(), books: out }, null, 2) + "\n");
+  writeFileSync(OUT, JSON.stringify({ books: out }, null, 2) + "\n");
 
   const all = Object.values(out).flatMap((b) => b.entries);
   const reviews = all.filter((e) => e.review).length;
