@@ -17,11 +17,13 @@ jobs:
         with:
           node-version: 24
       - run: node fetch-ratings.mjs
+        env:
+          HARDCOVER_TOKEN: ${{ secrets.HARDCOVER_TOKEN }}
       - run: node build.mjs
       - name: Commit if anything changed
         run: |
           git diff --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Refresh ratings from Goodreads"
+          git commit -am "Refresh club ratings"
           git push
