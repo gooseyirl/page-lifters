@@ -159,15 +159,21 @@ function stars(value) {
 // Books
 // ---------------------------------------------------------------------------
 
-// Outbound links for a book, Goodreads then Hardcover, whichever it has.
+// Outbound links for a book, as a row of the sites' own favicons: Goodreads
+// then Hardcover, whichever it has. The name is in the label and tooltip.
+const SITES = [
+  ["goodreads", "Goodreads"],
+  ["hardcover", "Hardcover"],
+];
+
 function bookLinks(book) {
-  return [
-    ["Goodreads", book.goodreads],
-    ["Hardcover", book.hardcover],
-  ]
-    .filter(([, url]) => url)
-    .map(([name, url]) => `<a class="ext-link" href="${esc(url)}" target="_blank" rel="noopener">${name} <span aria-hidden="true">↗</span></a>`)
-    .join("");
+  const links = SITES.filter(([key]) => book[key]).map(
+    ([key, name]) =>
+      `<a class="ext-icon" href="${esc(book[key])}" target="_blank" rel="noopener" ` +
+      `title="${name}" aria-label="${name} (opens in a new tab)">` +
+      `<img src="icons/${key}.png" alt="" width="24" height="24"></a>`,
+  );
+  return links.length ? `<span class="ext-links">${links.join("")}</span>` : "";
 }
 
 function loadBooks() {
