@@ -108,7 +108,8 @@ function hardcoverToken() {
   return raw.toLowerCase().startsWith("bearer ") ? raw : `Bearer ${raw}`;
 }
 
-async function fetchHardcover(username) {
+async function fetchHardcover(handle) {
+  const username = handle.replace(/^@/, ""); // "@name" as shown on profiles
   const token = hardcoverToken();
   if (!token) throw new Error("HARDCOVER_TOKEN is not set");
 
