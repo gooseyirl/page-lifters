@@ -1,0 +1,43 @@
+# One-off: download the Goodreads and Hardcover favicons into icons/.
+# Removed again before merging.
+name: Fetch favicons (temporary)
+on:
+  push:
+    branches: [claude/project-thread-es55cg]
+    paths: [.github/workflows/tmp-fetch-favicons.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download icons
+        run: |
+          set -u
+          mkdir -p icons
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+          for site in goodreads:https://www.goodreads.com hardcover:https://hardcover.app; do
+            name=${site%%:*}; base=${site#*:}
+            html=$(curl -sSL -A "$UA" "$base/" || true)
+            echo "== $name: icon links on homepage"
+            echo "$html" | grep -oiE '<link[^>]+rel="[^"]*icon[^"]*"[^>]*>' | head -20 || true
+            # Prefer the apple-touch-icon (large PNG), then any icon link, then /favicon.ico.
+            href=$(echo "$html" | grep -oiE '<link[^>]+rel="apple-touch-icon[^"]*"[^>]*>' | grep -oiE 'href="[^"]+"' | head -1 | cut -d'"' -f2)
+            [ -z "$href" ] && href=$(echo "$html" | grep -oiE '<link[^>]+rel="[^"]*icon[^"]*"[^>]*>' | grep -oiE 'href="[^"]+"' | head -1 | cut -d'"' -f2)
+            [ -z "$href" ] && href=/favicon.ico
+            case "$href" in http*) url=$href ;; //*) url="https:$href" ;; /*) url="$base$href" ;; *) url="$base/$href" ;; esac
+            echo "== $name: downloading $url"
+            curl -sSL -A "$UA" -o "icons/$name.raw" "$url"
+            type=$(file -b --mime-type "icons/$name.raw"); echo "$type"; file "icons/$name.raw"
+            case "$type" in image/png) ext=png ;; image/svg+xml|text/xml|text/plain) ext=svg ;; image/x-icon|image/vnd.microsoft.icon) ext=ico ;; image/webp) ext=webp ;; *) ext=bin ;; esac
+            mv "icons/$name.raw" "icons/$name.$ext"
+          done
+          ls -la icons
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add icons
+          git commit -m "Add Goodreads and Hardcover favicons"
+          git push
