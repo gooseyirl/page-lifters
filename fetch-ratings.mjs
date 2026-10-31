@@ -3,8 +3,8 @@
 //
 //   node fetch-ratings.mjs
 //
-// Goodreads shut its API in 2020, but per-user review RSS still works for
-// public profiles and carries user_rating and user_review. This reads that.
+// Goodreads shut its API in 2020 and its per-user review RSS in October 2026,
+// so this reads the public shelf pages instead. Profiles must be public.
 //
 // Nothing identifying is written out. ratings.json holds only anonymous
 // entries in a fixed order, so neither the page nor the repo says who gave what —
@@ -30,11 +30,6 @@ const decode = (s) =>
     .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
     .replace(/&amp;/g, "&");
-
-function field(item, tag) {
-  const m = item.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
-  return m ? decode(m[1]).trim() : "";
-}
 
 // Goodreads review bodies are HTML. Keep the paragraph breaks, drop the rest;
 // build.mjs escapes whatever comes out of here.
@@ -65,19 +60,88 @@ function clubBooks() {
   return books;
 }
 
+// Goodreads dropped the review RSS feeds in late October 2026, so this reads
+// the public shelf pages (the same table you see at goodreads.com/review/list)
+// and pulls each row apart. HTML is a less stable contract than RSS was: if
+// the layout changes, parseShelf finds no table and the run aborts rather
+// than writing an empty ratings.json.
+const STARS = {
+  "did not like it": 1,
+  "it was ok": 2,
+  "liked it": 3,
+  "really liked it": 4,
+  "it was amazing": 5,
+};
+
+function cell(row, name) {
+  const m = row.match(new RegExp(`<td class="field ${name}"[\\s\\S]*?</td>`));
+  return m ? m[0] : "";
+}
+
+function parseShelf(html, userId) {
+  if (!html.includes('id="booksBody"')) {
+    throw new Error(`shelf page for user ${userId} has no book table (private, signed-out wall, or a layout change)`);
+  }
+  const rows = html.split(/<tr id="review_\d+"/).slice(1);
+  return rows.map((row) => {
+    const titleCell = cell(row, "title");
+    const id = (titleCell.match(/\/book\/show\/(\d+)/) ?? row.match(/\/book\/show\/(\d+)/) ?? [])[1] ?? "";
+    const title = decode((titleCell.match(/<a[^>]*title="([^"]*)"/) ?? [])[1] ?? "").trim();
+
+    const stars = (cell(row, "rating").match(/staticStars[^>]*title="([^"]*)"/) ?? [])[1] ?? "";
+    const rating = STARS[stars.trim().toLowerCase()] ?? 0;
+
+    // Long reviews come twice: a clipped copy and the full text in a hidden
+    // span. Take the full one when it's there.
+    const reviewCell = cell(row, "review");
+    const full = reviewCell.match(/<span id="freeTextreview\d+"[^>]*>([\s\S]*?)<\/span>/);
+    const short = reviewCell.match(/<span id="freeTextContainerreview\d+"[^>]*>([\s\S]*?)<\/span>/);
+    const review = full?.[1] ?? short?.[1] ?? "";
+
+    return { id, title, rating, review };
+  });
+}
+
 async function fetchShelf(userId, shelf) {
   const items = [];
+  const seen = new Set();
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const url = `https://www.goodreads.com/review/list_rss/${userId}?shelf=${shelf}&page=${page}`;
+    const url = `https://www.goodreads.com/review/list/${userId}?shelf=${shelf}&per_page=100&page=${page}`;
     const res = await fetch(url, { headers: { "User-Agent": UA } });
     if (!res.ok) throw new Error(`HTTP ${res.status} for user ${userId}`);
-    const xml = await res.text();
-    const found = xml.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+    const found = parseShelf(await res.text(), userId).filter((r) => r.id && !seen.has(r.id));
+    if (!found.length) break; // past the last page, or it served page 1 again
+    found.forEach((r) => seen.add(r.id));
     items.push(...found);
-    if (found.length < 100) break;
     await new Promise((r) => setTimeout(r, 1000)); // be a polite guest
   }
   return items;
+}
+
+// Shelf pages don't carry the publisher blurb, so keep the synopses already in
+// ratings.json and only look up books that don't have one yet. Best effort: a
+// missing synopsis never fails the run.
+function knownSynopses() {
+  try {
+    const { books } = JSON.parse(readFileSync(OUT, "utf8"));
+    return new Map(Object.entries(books).filter(([, b]) => b.synopsis).map(([id, b]) => [id, b.synopsis]));
+  } catch {
+    return new Map();
+  }
+}
+
+async function fetchSynopsis(bookId) {
+  try {
+    const res = await fetch(`https://www.goodreads.com/book/show/${bookId}`, { headers: { "User-Agent": UA } });
+    if (!res.ok) return "";
+    const html = await res.text();
+    const m =
+      html.match(/data-testid="description"[\s\S]*?<span class="Formatted">([\s\S]*?)<\/span>/) ??
+      html.match(/<meta (?:name|property)="(?:og:)?description" content="([^"]*)"/);
+    return m ? reviewText(m[1]) : "";
+  } catch {
+    return "";
+  }
 }
 
 // Sorted by score, then review text, so the order says nothing about whose
@@ -94,16 +158,16 @@ async function main() {
   const byTitle = new Map(books.map((b) => [normalise(b.title), b]));
 
   const collected = new Map(books.map((b) => [b.id, []]));
-  // The feed carries the publisher blurb too. It's about the book, not the
-  // member, so there's nothing to anonymise — first one wins.
-  const synopses = new Map();
+  // The publisher blurb is about the book, not the member, so there's nothing
+  // to anonymise.
+  const synopses = knownSynopses();
   let matched = 0;
 
   for (const member of members) {
     let items;
     try {
-      // The all-shelves feed blanks user_review; the read shelf keeps it. Read
-      // first so its copy of a book wins, then all-shelves for everything else.
+      // Read shelf first so its copy of a book wins, then all shelves for
+      // anything rated or reviewed elsewhere.
       items = [
         ...(await fetchShelf(member.goodreads_id, "read")),
         ...(await fetchShelf(member.goodreads_id, "%23ALL%23")),
@@ -119,17 +183,12 @@ async function main() {
     let hits = 0;
     const seen = new Set();
     for (const item of items) {
-      const book = byId.get(field(item, "book_id")) ?? byTitle.get(normalise(field(item, "title")));
+      const book = byId.get(item.id) ?? byTitle.get(normalise(item.title));
       if (!book || seen.has(book.id)) continue;
       seen.add(book.id);
 
-      if (!synopses.has(book.id)) {
-        const blurb = reviewText(field(item, "book_description"));
-        if (blurb) synopses.set(book.id, blurb);
-      }
-
-      const rating = Number(field(item, "user_rating"));
-      const review = reviewText(field(item, "user_review"));
+      const rating = item.rating;
+      const review = reviewText(item.review);
       // rating 0 means shelved but not scored — not a zero-star verdict.
       if (!rating && !review) continue;
 
@@ -141,6 +200,12 @@ async function main() {
       matched++;
     }
     console.log(`${member.name.padEnd(6)} ${String(items.length).padStart(4)} shelf items, ${hits} club books`);
+  }
+
+  for (const book of books) {
+    if (synopses.has(book.id)) continue;
+    const blurb = await fetchSynopsis(book.id);
+    if (blurb) synopses.set(book.id, blurb);
   }
 
   const out = {};
