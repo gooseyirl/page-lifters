@@ -14,26 +14,17 @@ jobs:
       - name: Download icon
         run: |
           set -u
-          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          echo "== homepage"
-          curl -sSL -A "$UA" -o home.html -w "status %{http_code}, %{size_download} bytes, final %{url_effective}\n" https://hardcover.app/ || true
-          grep -oiE '<link[^>]*>' home.html | grep -i icon | head -20 || true
-          grep -oiE '(href|src)="[^"]*(icon|logo)[^"]*"' home.html | sort -u | head -20 || true
-          for path in $(grep -oiE '<link[^>]*icon[^>]*>' home.html | grep -oiE 'href="[^"]+"' | cut -d'"' -f2) /apple-touch-icon.png /favicon.png /favicon.svg /icon.png /favicon-32x32.png /favicon.ico /images/favicon.png /images/logo-icon.png; do
-            case "$path" in http*) url=$path ;; //*) url="https:$path" ;; /*) url="https://hardcover.app$path" ;; *) url="https://hardcover.app/$path" ;; esac
-            code=$(curl -sSL -A "$UA" -o cand -w "%{http_code}" "$url" || echo err)
-            type=$(file -b --mime-type cand 2>/dev/null); size=$(stat -c %s cand 2>/dev/null)
-            echo "$code $type $size $url"
-            if [ "$code" = 200 ] && [ "${size:-0}" -gt 0 ]; then
-              case "$type" in
-                image/png) mkdir -p icons; mv cand icons/hardcover.png; echo "picked $url"; break ;;
-                image/svg+xml) mkdir -p icons; mv cand icons/hardcover.svg; echo "picked $url"; break ;;
-                image/x-icon|image/vnd.microsoft.icon) mkdir -p icons; mv cand icons/hardcover.ico; echo "picked $url"; break ;;
-                image/webp) mkdir -p icons; mv cand icons/hardcover.webp; echo "picked $url"; break ;;
-              esac
-            fi
+          mkdir -p icons cands
+          i=0
+          for url in "https://www.google.com/s2/favicons?domain=hardcover.app&sz=128" "https://icons.duckduckgo.com/ip3/hardcover.app.ico" "https://www.google.com/s2/favicons?domain=hardcover.app&sz=64"; do
+            i=$((i+1))
+            code=$(curl -sSL -o "cands/$i" -w "%{http_code}" "$url" || echo err)
+            echo "$code $(file -b "cands/$i") $url"
           done
-          ls -la icons; file icons/* || true
+          # Keep every candidate so they can be looked at; the page picks one later.
+          cp cands/1 icons/hardcover-google128.png || true
+          cp cands/2 icons/hardcover-ddg.ico || true
+          ls -la icons
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
