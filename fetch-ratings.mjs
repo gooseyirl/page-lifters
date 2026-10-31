@@ -78,9 +78,15 @@ function cell(row, name) {
   return m ? m[0] : "";
 }
 
-function parseShelf(html, userId) {
+function parseShelf(html, userId, url) {
   if (!html.includes('id="booksBody"')) {
-    throw new Error(`shelf page for user ${userId} has no book table (private, signed-out wall, or a layout change)`);
+    // Say what came back instead, so a sign-in wall or redesign is obvious
+    // from the Actions log.
+    const title = (html.match(/<title>([\s\S]*?)<\/title>/) ?? [])[1]?.trim() ?? "(no title)";
+    throw new Error(
+      `shelf page for user ${userId} has no book table (private, signed-out wall, or a layout change)\n` +
+        `  served ${url}, ${html.length} bytes, title "${title}"`,
+    );
   }
   const rows = html.split(/<tr id="review_\d+"/).slice(1);
   return rows.map((row) => {
@@ -109,7 +115,7 @@ async function fetchShelf(userId, shelf) {
     const url = `https://www.goodreads.com/review/list/${userId}?shelf=${shelf}&per_page=100&page=${page}`;
     const res = await fetch(url, { headers: { "User-Agent": UA } });
     if (!res.ok) throw new Error(`HTTP ${res.status} for user ${userId}`);
-    const found = parseShelf(await res.text(), userId).filter((r) => r.id && !seen.has(r.id));
+    const found = parseShelf(await res.text(), userId, res.url).filter((r) => r.id && !seen.has(r.id));
     if (!found.length) break; // past the last page, or it served page 1 again
     found.forEach((r) => seen.add(r.id));
     items.push(...found);
