@@ -13,6 +13,9 @@
 // shelf pages now want a sign-in, so it is read best effort: RSS first, then
 // the shelf page, in case either comes back.
 //
+// A member none of whose sites can be read is skipped for that run. If no
+// member can be read at all, the run aborts and ratings.json is left alone.
+//
 // Nothing identifying is written out. ratings.json holds only anonymous
 // entries in a fixed order, so neither the page nor the repo says who gave what —
 // members.json maps names to profiles, and that is the only link.
@@ -292,6 +295,7 @@ async function main() {
   const collected = new Map(books.map((b) => [b.id, []]));
   const synopses = knownSynopses();
   let matched = 0;
+  let readable = 0;
 
   for (const member of members) {
     const sources = { hardcover: [], goodreads: [] };
@@ -313,15 +317,15 @@ async function main() {
     }
 
     const tried = Number(Boolean(member.hardcover_username)) + Number(Boolean(member.goodreads_id));
-    if (failures.length === tried) {
-      // Nothing at all for this member. Writing now would silently drop their
-      // ratings, so keep the last good ratings.json instead.
-      console.error(`\n${member.name}: no source could be read`);
-      failures.forEach((f) => console.error(`  ${f}`));
-      console.error("Aborting — ratings.json left untouched.");
-      process.exit(1);
+    if (!tried || failures.length === tried) {
+      // Nothing readable for this member, so they're left out of this run and
+      // their ratings drop off the page until a source works again.
+      console.warn(`${member.name}: skipped — no source could be read`);
+      failures.forEach((f) => console.warn(`  ${f}`));
+      continue;
     }
     failures.forEach((f) => console.warn(`${member.name}: skipped ${f}`));
+    readable++;
 
     for (const row of [...sources.hardcover, ...sources.goodreads]) {
       const book = match(row);
@@ -336,6 +340,13 @@ async function main() {
 
     const fromGr = merged.size - hc.size;
     console.log(`${member.name.padEnd(6)} ${String(merged.size).padStart(3)} club books (${hc.size} Hardcover, ${fromGr} Goodreads)`);
+  }
+
+  if (!readable) {
+    // Every member failed: an outage or an expired HARDCOVER_TOKEN, not a
+    // club change. Keep the last good ratings.json rather than blank the page.
+    console.error("\nNo member could be read. Aborting — ratings.json left untouched.");
+    process.exit(1);
   }
 
   const out = {};

@@ -93,8 +93,10 @@ Actions) for the daily run. Tokens expire after a year.
 
 Goodreads closed its review RSS in October 2026 and now asks for a sign-in on
 shelf pages, so it is read best effort. If one of a member's sites fails the
-run carries on with the other; if every site for a member fails, the run
-stops and leaves `ratings.json` as it was.
+run carries on with the other. A member with no readable site is skipped, so
+their ratings drop off the page until they add a Hardcover username. If
+nobody can be read (an outage, or an expired token) the run stops and leaves
+`ratings.json` as it was.
 
 `ratings.json` holds anonymous entries, sorted by score, — no names, in the file or on
 the page. `members.json` is the only thing that maps a person to a profile.
