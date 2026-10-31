@@ -344,7 +344,7 @@ main { max-width: 1180px; margin: 0 auto; }
 
 /* ── Slide-out panel ──────────────────────────────────────────────────── */
 
-/* The whole card is the target — bar the Goodreads link, which sits above it. */
+/* The whole card is the target — bar the outbound links, which sit above it. */
 .card[data-panel] { cursor: pointer; }
 .card[data-panel]:hover .title { color: var(--stamp); }
 
@@ -353,7 +353,7 @@ main { max-width: 1180px; margin: 0 auto; }
   outline-offset: 3px;
 }
 
-.card .goodreads { position: relative; z-index: 1; }
+.card .ext-link { position: relative; z-index: 1; }
 
 .panel-overlay {
   position: fixed;
@@ -569,7 +569,7 @@ body.panel-is-open { overflow: hidden; }
   padding-left: 13px;
 }
 
-.panel-scroll .goodreads { margin-top: 26px; }
+.panel-links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 26px; }
 
 @media (max-width: 520px) {
   .panel { width: 100%; }
@@ -589,14 +589,15 @@ body.panel-is-open { overflow: hidden; }
 .card-foot {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
   /* Held to the bottom of the card, whatever the entry above it runs to. */
   margin-top: auto;
   padding-top: 16px;
   min-height: 34px;
 }
 
-.goodreads {
+.ext-link {
   display: inline-block;
   white-space: nowrap;
   font-family: var(--mono);
@@ -610,7 +611,7 @@ body.panel-is-open { overflow: hidden; }
   transition: color 0.2s, border-color 0.2s;
 }
 
-.goodreads:hover { color: var(--ink); border-color: var(--ink); }
+.ext-link:hover { color: var(--ink); border-color: var(--ink); }
 
 /* ── Rubber stamps ────────────────────────────────────────────────────── */
 

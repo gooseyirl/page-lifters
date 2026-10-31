@@ -159,6 +159,17 @@ function stars(value) {
 // Books
 // ---------------------------------------------------------------------------
 
+// Outbound links for a book, Goodreads then Hardcover, whichever it has.
+function bookLinks(book) {
+  return [
+    ["Goodreads", book.goodreads],
+    ["Hardcover", book.hardcover],
+  ]
+    .filter(([, url]) => url)
+    .map(([name, url]) => `<a class="ext-link" href="${esc(url)}" target="_blank" rel="noopener">${name} <span aria-hidden="true">↗</span></a>`)
+    .join("");
+}
+
 function loadBooks() {
   const files = readdirSync(BOOKS_DIR).filter((f) => f.endsWith(".md")).sort();
   const allRatings = loadRatings();
@@ -181,6 +192,9 @@ function loadBooks() {
       year: data.year,
       order: typeof data.order === "number" ? data.order : null,
       goodreads: data.goodreads,
+      // A hardcover: link in front matter wins; otherwise the slug that
+      // fetch-ratings.mjs found when a member logged the book there.
+      hardcover: data.hardcover || (record.hardcover ? `https://hardcover.app/books/${record.hardcover}` : null),
       cover: coverUrl(data),
       chosenBy: data.chosen_by,
       note: renderNote(body),
@@ -266,7 +280,7 @@ function bookPanel(book) {
             ? `<div class="panel-block"><h3>Reviews</h3><p class="panel-label">Nobody's written one yet</p></div>`
             : ""
         }
-        ${book.goodreads ? `<a class="goodreads" href="${esc(book.goodreads)}" target="_blank" rel="noopener">Goodreads <span aria-hidden="true">↗</span></a>` : ""}
+        ${bookLinks(book) ? `<div class="panel-links">${bookLinks(book)}</div>` : ""}
       </div>
     </aside>`;
 }
@@ -325,7 +339,7 @@ function bookCard(book, index) {
         ${book.note ? `<div class="note">${book.note}</div>` : ""}
         ${verdict}
         <div class="card-foot">
-          ${book.goodreads ? `<a class="goodreads" href="${esc(book.goodreads)}" target="_blank" rel="noopener">Goodreads <span aria-hidden="true">↗</span></a>` : ""}
+          ${bookLinks(book)}
           ${stamp}
         </div>
       </div>

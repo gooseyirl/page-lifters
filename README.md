@@ -43,6 +43,7 @@ Supports **bold**, *italic* and [links](https://example.com).
 | `isbn` | Fetches the cover from Open Library. **Keep the quotes.** |
 | `cover` | A local image path, if you'd rather not use the ISBN. Wins over `isbn`. |
 | `goodreads` | Adds the Goodreads link. |
+| `hardcover` | Adds the Hardcover link. Optional: once a member logs the book on Hardcover, the link is filled in automatically. |
 | `chosen_by` | Whose pick it was. |
 | `read` | The date you finished it (`YYYY-MM-DD`). Its presence is what marks a book as read. |
 | `reading` | `true` while you're partway through. |

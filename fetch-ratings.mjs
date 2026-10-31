@@ -122,7 +122,7 @@ async function fetchHardcover(handle) {
       user_books(where: {_or: [{rating: {_is_null: false}}, {has_review: {_eq: true}}]}) {
         rating
         review_raw
-        book { title description }
+        book { title description slug }
         edition { isbn_13 isbn_10 }
       }
     }
@@ -145,6 +145,7 @@ async function fetchHardcover(handle) {
     rating: Number(ub.rating) || 0,
     review: reviewText(ub.review_raw),
     description: reviewText(ub.book?.description),
+    hardcoverSlug: ub.book?.slug ?? "",
   }));
 }
 
@@ -275,12 +276,12 @@ export function mergeMember(hardcover, goodreads) {
 const byScore = (a, b) =>
   (b.rating ?? 0) - (a.rating ?? 0) || (a.review ?? "").localeCompare(b.review ?? "");
 
-// Synopses are about the book, not the member, so there's nothing to
-// anonymise. Keep what ratings.json already has.
-function knownSynopses() {
+// Synopses and Hardcover slugs are about the book, not the member, so
+// there's nothing to anonymise. Keep what ratings.json already has.
+function known(key) {
   try {
     const { books } = JSON.parse(readFileSync(OUT, "utf8"));
-    return new Map(Object.entries(books).filter(([, b]) => b.synopsis).map(([id, b]) => [id, b.synopsis]));
+    return new Map(Object.entries(books).filter(([, b]) => b[key]).map(([id, b]) => [id, b[key]]));
   } catch {
     return new Map();
   }
@@ -293,7 +294,8 @@ async function main() {
   const books = clubBooks();
   const match = matcher(books);
   const collected = new Map(books.map((b) => [b.id, []]));
-  const synopses = knownSynopses();
+  const synopses = known("synopsis");
+  const slugs = known("hardcover");
   let matched = 0;
   let readable = 0;
 
@@ -330,6 +332,7 @@ async function main() {
     for (const row of [...sources.hardcover, ...sources.goodreads]) {
       const book = match(row);
       if (book && row.description && !synopses.has(book.id)) synopses.set(book.id, row.description);
+      if (book && row.hardcoverSlug && !slugs.has(book.id)) slugs.set(book.id, row.hardcoverSlug);
     }
 
     const hc = verdicts(sources.hardcover, match);
@@ -352,9 +355,11 @@ async function main() {
   const out = {};
   for (const [id, entries] of collected) {
     const synopsis = synopses.get(id);
-    if (!entries.length && !synopsis) continue;
+    const hardcover = slugs.get(id);
+    if (!entries.length && !synopsis && !hardcover) continue;
     out[id] = {
       ...(synopsis ? { synopsis } : {}),
+      ...(hardcover ? { hardcover } : {}),
       entries: entries.sort(byScore),
     };
   }
