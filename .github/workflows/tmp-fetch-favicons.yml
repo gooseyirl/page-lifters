@@ -1,5 +1,4 @@
-# One-off: download the Goodreads and Hardcover favicons into icons/.
-# Removed again before merging.
+# One-off: download the Hardcover favicon into icons/. Removed again before merging.
 name: Fetch favicons (temporary)
 on:
   push:
@@ -12,32 +11,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Download icons
+      - name: Download icon
         run: |
           set -u
-          mkdir -p icons
           UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          for site in goodreads:https://www.goodreads.com hardcover:https://hardcover.app; do
-            name=${site%%:*}; base=${site#*:}
-            html=$(curl -sSL -A "$UA" "$base/" || true)
-            echo "== $name: icon links on homepage"
-            echo "$html" | grep -oiE '<link[^>]+rel="[^"]*icon[^"]*"[^>]*>' | head -20 || true
-            # Prefer the apple-touch-icon (large PNG), then any icon link, then /favicon.ico.
-            href=$(echo "$html" | grep -oiE '<link[^>]+rel="apple-touch-icon[^"]*"[^>]*>' | grep -oiE 'href="[^"]+"' | head -1 | cut -d'"' -f2)
-            [ -z "$href" ] && href=$(echo "$html" | grep -oiE '<link[^>]+rel="[^"]*icon[^"]*"[^>]*>' | grep -oiE 'href="[^"]+"' | head -1 | cut -d'"' -f2)
-            [ -z "$href" ] && href=/favicon.ico
-            case "$href" in http*) url=$href ;; //*) url="https:$href" ;; /*) url="$base$href" ;; *) url="$base/$href" ;; esac
-            echo "== $name: downloading $url"
-            curl -sSL -A "$UA" -o "icons/$name.raw" "$url"
-            type=$(file -b --mime-type "icons/$name.raw"); echo "$type"; file "icons/$name.raw"
-            case "$type" in image/png) ext=png ;; image/svg+xml|text/xml|text/plain) ext=svg ;; image/x-icon|image/vnd.microsoft.icon) ext=ico ;; image/webp) ext=webp ;; *) ext=bin ;; esac
-            mv "icons/$name.raw" "icons/$name.$ext"
+          echo "== homepage"
+          curl -sSL -A "$UA" -o home.html -w "status %{http_code}, %{size_download} bytes, final %{url_effective}\n" https://hardcover.app/ || true
+          grep -oiE '<link[^>]*>' home.html | grep -i icon | head -20 || true
+          grep -oiE '(href|src)="[^"]*(icon|logo)[^"]*"' home.html | sort -u | head -20 || true
+          for path in $(grep -oiE '<link[^>]*icon[^>]*>' home.html | grep -oiE 'href="[^"]+"' | cut -d'"' -f2) /apple-touch-icon.png /favicon.png /favicon.svg /icon.png /favicon-32x32.png /favicon.ico /images/favicon.png /images/logo-icon.png; do
+            case "$path" in http*) url=$path ;; //*) url="https:$path" ;; /*) url="https://hardcover.app$path" ;; *) url="https://hardcover.app/$path" ;; esac
+            code=$(curl -sSL -A "$UA" -o cand -w "%{http_code}" "$url" || echo err)
+            type=$(file -b --mime-type cand 2>/dev/null); size=$(stat -c %s cand 2>/dev/null)
+            echo "$code $type $size $url"
+            if [ "$code" = 200 ] && [ "${size:-0}" -gt 0 ]; then
+              case "$type" in
+                image/png) mkdir -p icons; mv cand icons/hardcover.png; echo "picked $url"; break ;;
+                image/svg+xml) mkdir -p icons; mv cand icons/hardcover.svg; echo "picked $url"; break ;;
+                image/x-icon|image/vnd.microsoft.icon) mkdir -p icons; mv cand icons/hardcover.ico; echo "picked $url"; break ;;
+                image/webp) mkdir -p icons; mv cand icons/hardcover.webp; echo "picked $url"; break ;;
+              esac
+            fi
           done
-          ls -la icons
+          ls -la icons; file icons/* || true
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add icons
-          git commit -m "Add Goodreads and Hardcover favicons"
+          git diff --cached --quiet && { echo "nothing found"; exit 1; }
+          git commit -m "Add Hardcover favicon"
           git push
