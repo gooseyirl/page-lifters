@@ -353,7 +353,7 @@ main { max-width: 1180px; margin: 0 auto; }
   outline-offset: 3px;
 }
 
-.card .ext-link { position: relative; z-index: 1; }
+.card .ext-links { position: relative; z-index: 1; }
 
 .panel-overlay {
   position: fixed;
@@ -569,7 +569,7 @@ body.panel-is-open { overflow: hidden; }
   padding-left: 13px;
 }
 
-.panel-links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 26px; }
+.panel-links { margin-top: 26px; }
 
 @media (max-width: 520px) {
   .panel { width: 100%; }
@@ -597,21 +597,36 @@ body.panel-is-open { overflow: hidden; }
   min-height: 34px;
 }
 
-.ext-link {
-  display: inline-block;
-  white-space: nowrap;
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+/* Goodreads and Hardcover, as a pair of round lettermarks. */
+.ext-links { display: inline-flex; gap: 8px; }
+
+.ext-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #3f6b6066;
+  border-radius: 50%;
   color: var(--thread);
   text-decoration: none;
-  border-bottom: 1px solid #3f6b6055;
-  padding-bottom: 2px;
-  transition: color 0.2s, border-color 0.2s;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
 }
 
-.ext-link:hover { color: var(--ink); border-color: var(--ink); }
+/* Lift the letters so they sit optically centred in the ring. */
+.ext-icon span { transform: translateY(-1px); }
+
+.ext-icon:hover,
+.ext-icon:focus-visible {
+  color: var(--card);
+  background: var(--thread);
+  border-color: var(--thread);
+}
+
+.ext-icon:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 
 /* ── Rubber stamps ────────────────────────────────────────────────────── */
 
