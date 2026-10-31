@@ -159,19 +159,19 @@ function stars(value) {
 // Books
 // ---------------------------------------------------------------------------
 
-// Outbound links for a book, as a row of icons: Goodreads then Hardcover,
-// whichever it has. Simple lettermarks rather than the sites' own logos, so
-// they sit in the card's ink and type; the name is in the label and tooltip.
+// Outbound links for a book, as a row of the sites' own favicons: Goodreads
+// then Hardcover, whichever it has. The name is in the label and tooltip.
 const SITES = [
-  ["goodreads", "Goodreads", "g"],
-  ["hardcover", "Hardcover", "h"],
+  ["goodreads", "Goodreads"],
+  ["hardcover", "Hardcover"],
 ];
 
 function bookLinks(book) {
   const links = SITES.filter(([key]) => book[key]).map(
-    ([key, name, mark]) =>
-      `<a class="ext-icon ext-${key}" href="${esc(book[key])}" target="_blank" rel="noopener" ` +
-      `title="${name}" aria-label="${name} (opens in a new tab)"><span aria-hidden="true">${mark}</span></a>`,
+    ([key, name]) =>
+      `<a class="ext-icon" href="${esc(book[key])}" target="_blank" rel="noopener" ` +
+      `title="${name}" aria-label="${name} (opens in a new tab)">` +
+      `<img src="icons/${key}.png" alt="" width="24" height="24"></a>`,
   );
   return links.length ? `<span class="ext-links">${links.join("")}</span>` : "";
 }
